@@ -1,0 +1,5 @@
+.sp-preview-container {
+  border: 1px solid black;
+  border-radius: 10px;
+  overflow-y: hidden;
+}

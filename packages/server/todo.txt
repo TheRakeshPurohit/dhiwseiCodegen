@@ -1,0 +1,5 @@
+1. Generate AST for the given code.
+2. Check all import statements, determine local
+and external imports.
+3. Generate a map for local imports with their components.
+4. If imported item used inside ast, then add path prop.

@@ -1,0 +1,19 @@
+{
+  "name": "dhiwise-codegen",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently -k yarn:start-client-dev yarn:start-server-dev",
+    "start-client-dev": "lerna run start --scope=@dhiwise-codegen/client --stream",
+    "start-server-dev": "lerna run start --scope=@dhiwise-codegen/server --stream",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^6.0.0",
+    "lerna": "^4.0.0"
+  }
+}

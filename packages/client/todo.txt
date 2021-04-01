@@ -1,0 +1,27 @@
+// Parse Uploaded files
+
+1. Generate AST for the given code.
+2. Check all import statements, determine local
+and external imports.
+3. Generate a map for local imports with their components.
+4. If imported item used inside ast, then add path prop.
+5. Reject node_modules.
+6. Get Dependencies and Main file from package.json.
+
+// Api Call
+
+<--- Input Node --->
+
+  1. Identify core `<input>` tags from dom.
+  2. For each input identify the component.
+    2.1. Get Component Name and Location.
+      - If component comes from node_modules, then get name only,
+      set flag `is_external` to true.
+    2.2. Append name and location(optional) to a map.
+  3. Provide a dropdown panel to select components from page multiple select.
+    - Loop through the map.
+  4. Detect Buttons in UI.
+  5. Create panel UI.
+  6. Figure out how to get form parent.
+
+<--- Input Node --->
