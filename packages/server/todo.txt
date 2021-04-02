@@ -3,3 +3,10 @@
 and external imports.
 3. Generate a map for local imports with their components.
 4. If imported item used inside ast, then add path prop.
+5. replace `../../` type imports.
+
+<-- AddApiToForm -->
+
+  1. Add logic for userdefined and core components.
+
+<-- AddApiToForm -->

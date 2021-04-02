@@ -7,6 +7,8 @@ and external imports.
 4. If imported item used inside ast, then add path prop.
 5. Reject node_modules.
 6. Get Dependencies and Main file from package.json.
+7. Find the `root` render component in HTML file
+8. Inject our custom code files.
 
 // Api Call
 

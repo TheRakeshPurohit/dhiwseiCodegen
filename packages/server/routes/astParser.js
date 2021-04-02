@@ -1,17 +1,24 @@
 var express = require('express');
 var router = express.Router();
-// let files = require('../staticData/files');
+let { files, apiFiles } = require('../staticData/files');
 const babelParser = require('@babel/parser');
 const traverse = require("@babel/traverse").default;
 let { isLocalModule, removeEndExtension, getFileExtension } = require('../helpers/astHelpers');
 const t = require('@babel/types');
+const { addHooksAndFunctions } = require('../modules/formInputAst');
 const generate = require('@babel/generator').default;
+// const entry = '/src/index.js';
 
 let filePathsMap = {};
 
+// Ast Runners
+
+/**
+ * parse file and add component path
+ * as prop to Userdefined components.
+ */
 const insertFilePaths = (filePath, fileCode) => {
   
-  // let ast = babelParser;
   let ast = babelParser.parse(fileCode, {
     sourceType: 'module',
     plugins: ['jsx'],
@@ -104,9 +111,248 @@ const insertFilePaths = (filePath, fileCode) => {
   return code;
 };     
 
-// const entry = '/src/index.js';
+const addApiToForm = (container, inputs, apiUrl) => {
 
-router.post('/', function(req, res) {
+  /**
+   * User of providing unique names to 
+   * input tags
+   */
+  let inputCount = 0;
+
+  /**
+   * Input name array to hold names
+   * of all input tags
+   */
+  let inputNamesArray = [];
+
+  let fileCode = apiFiles[container.src];
+  if(!fileCode) {
+    return { msg: 'Container not found' };
+  }
+
+  let componentNames = inputs.map(input => input.name);
+
+  let ast = babelParser.parse(fileCode, {
+    sourceType: 'module',
+    plugins: ['jsx'],
+  });
+
+  /**
+   * Traverse AST to make changes
+   * Order of execution:
+   * T1 -> add props to given inputs
+   * T2 -> insert `formData` data hook
+   * T3 -> insert `onChange` and `onSubmit functions`
+   * TODO T2 & T3 only works for VariableDeclaration
+   * Need to do same for Exports and Functional Types
+   */
+  traverse(ast,{
+    JSXElement(path) {
+      let { node } = path;
+      let componentName = "";
+      let attributes = {};
+
+      /**
+       * Get Component name
+       * Looks for patterns like: <Input />
+       */
+      if(
+        node.openingElement &&
+        node.openingElement.name &&
+        t.isJSXIdentifier(node.openingElement.name) &&
+        componentNames.includes(node.openingElement.name.name)
+      ) {
+        componentName = node.openingElement.name.name;
+        console.log("componentName: ", componentName);
+
+        // Check for exitsting name attr
+        if(
+          node.openingElement &&
+          node.openingElement.attributes &&
+          node.openingElement.attributes.length > 0
+        ) {
+          node.openingElement.attributes.forEach(attr => {
+            if(attr && attr.name && attr.name.name === "name") {
+              attributes.name = attr.value.value;
+            }
+          });
+        }
+
+        // if not set generate unique name.
+        if(!attributes.name) {
+          attributes.name = `input_${inputCount}`;
+          inputCount += 1;
+
+          // Append name attribute to ast
+          let nameAttrAst = t.jsxAttribute(t.jsxIdentifier('name'), t.stringLiteral(attributes.name));
+          node.openingElement.attributes.push(nameAttrAst);
+        }
+
+        // push name to global array
+        inputNamesArray.push(attributes.name);
+
+        // Append OnChange ast to attributes
+        /**
+         * Check if onChange exists
+         */
+        let hasOnChange = false; 
+        node.openingElement.attributes.forEach(attribute => {
+          if(t.isJSXAttribute(attribute)) {
+
+            /**
+             * If onChange then update value
+             */
+            if(attribute.name.name === "onChange") {
+              let onChangeAst = t.jsxExpressionContainer(t.identifier("onChange"));
+              attribute.value = onChangeAst;
+              hasOnChange = true;
+            }
+          }
+        });
+
+        /**
+         * If no onChange present, create one
+         */
+        if(!hasOnChange) {
+          let onChangeAst = t.jsxAttribute(
+            t.jsxIdentifier('onChange'), 
+            t.jsxExpressionContainer(t.identifier("onChange"))
+          );
+          node.openingElement.attributes.push(onChangeAst);
+        }
+
+        // append value in attributes
+        /**
+         * Check if value attribute exists
+         */
+        let hasValue = false; 
+        node.openingElement.attributes.forEach(attribute => {
+          if(t.isJSXAttribute(attribute)) {
+            /**
+             * If `value` present then update value
+             */
+            if(attribute.name.name === "value") {
+              let valueAst = t.jsxExpressionContainer(
+                t.memberExpression(
+                  t.identifier('formData'), 
+                  t.identifier(attributes.name)
+                )
+              );
+              attribute.value = valueAst;
+              hasValue = true;
+            }
+          }
+        });
+
+        /**
+         * If no `value` attribute present, create one
+         */
+        if(!hasValue) {
+          let valueAst = t.jsxAttribute(
+            t.jsxIdentifier('value'), 
+            t.jsxExpressionContainer(
+              t.memberExpression(
+                t.identifier('formData'), 
+                t.identifier(attributes.name)
+              )
+            )
+          );
+          node.openingElement.attributes.push(valueAst);
+        }
+        
+        /**
+         * Testing Logs
+         */
+        console.log("hasOnChange: ", hasOnChange);
+        console.log("hasValue: ", hasValue);
+
+      }
+    },
+    VariableDeclaration(path) {
+      /**
+       * Need to check if this is the container node
+       */
+      
+      const { node } = path;
+
+      /**
+       * Scan through declarations to find container node
+       */
+      if(
+        node.declarations &&
+        node.declarations.length > 0
+      ) {
+
+        /**
+         * Find index of container node
+         */
+        let containerNode = node.declarations.find((declaration) => {
+          if(
+            t.isVariableDeclarator(declaration) &&
+            declaration.id && t.isIdentifier(declaration.id) &&
+            declaration.id.name === container.name
+          ) {
+            return true;
+          }
+          else {
+            return false;
+          }
+        });
+
+        if(containerNode) {
+
+          /**
+           * Found It, start editing, and finally
+           * replace node with path.replaceWith
+           */
+
+          /**
+           * Adding Data hooks
+           * `formData` - to store form's data
+           */
+          
+          containerNode = addHooksAndFunctions(containerNode, apiUrl );
+          
+
+          /**
+           * Adding `onChange` and `onSubmit` functions
+           */
+          // containerNode = addFunctions(containerNode);
+
+          /**
+           * Replace current node with updated AST
+           */
+          path.replaceWith(containerNode);
+
+        }
+
+        /**
+         * Testing Logs
+         */
+        // console.log("containerNode: ", containerNode);
+      }
+    },
+
+  });
+
+  /**
+   * Convert ast back to code
+   */
+  const { code } = generate(ast, {
+    sourceType: 'module',
+    plugins: ['jsx'],
+  }, fileCode);
+
+  /**
+   * Testing Logs
+   */
+  console.log('inputNamesArray: ', inputNamesArray);
+  console.log('code: ', code);
+
+};
+
+// Route Handlers
+router.post('/parseFiles', function(req, res) {
 
   try {
 
@@ -129,6 +375,25 @@ router.post('/', function(req, res) {
   } catch (error) {
     throw error;
   }
+});
+
+router.post('/addApiToForm', (req, res) => {
+
+  let { container, inputs, apiUrl } = req.body;
+  if(!container || !inputs || !apiUrl) {
+    res.statusCode = 400;
+    res.json({ msg: 'Missing Fields' })
+  }
+
+  try {
+    
+    const result = addApiToForm(container, inputs, apiUrl);
+    res.json({ ...result });
+    
+  } catch (error) {
+    throw error;
+  }
+
 });
 
 
