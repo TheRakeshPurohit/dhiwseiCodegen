@@ -5,9 +5,14 @@ const babelParser = require('@babel/parser');
 const traverse = require("@babel/traverse").default;
 let { isLocalModule, removeEndExtension, getFileExtension } = require('../helpers/astHelpers');
 const t = require('@babel/types');
-const { addHooksAndFunctions } = require('../modules/formInputAst');
 const generate = require('@babel/generator').default;
-// const entry = '/src/index.js';
+
+/**
+ * Modules
+ */
+const { addHooksAndFunctions } = require('../modules/formInputAst');
+const { getEntryFile, addViewer, getViewerFiles } = require('../modules/parseFiles');
+
 
 let filePathsMap = {};
 
@@ -53,7 +58,7 @@ const insertFilePaths = (filePath, fileCode) => {
             });
           }
 
-          console.log('dependencyNames: ', dependencyNames);
+          // console.log('dependencyNames: ', dependencyNames);
 
           // remove extension from parent file path
           filePathWithNoExtension = removeEndExtension(filePath);
@@ -64,7 +69,7 @@ const insertFilePaths = (filePath, fileCode) => {
           filePathWithNoExtension = filePathWithNoExtension.join('/');
 
           let dependencyPath = `${filePathWithNoExtension}/${node.source.value.split('/').splice(1).join('/')}.js`;
-          console.log('filePathWithNoExtension: ', filePathWithNoExtension);
+          // console.log('filePathWithNoExtension: ', filePathWithNoExtension);
 
           dependencyNames.forEach(dependency => {
             // check is already added
@@ -85,7 +90,7 @@ const insertFilePaths = (filePath, fileCode) => {
         node.name.name &&
         Object.keys(filePathsMap).includes(node.name.name)
       ) {
-        console.log('found a dep, injecting prop...');
+        // console.log('found a dep, injecting prop...');
 
         // create ast attribute
         let dhiwisePathAttrAst = t.jsxAttribute(
@@ -105,8 +110,11 @@ const insertFilePaths = (filePath, fileCode) => {
     plugins: ['jsx'],
   }, fileCode);
 
-  console.log("filePathsMap: ", filePathsMap);
-  console.log('code: ', code);
+  /**
+   * Testing Logs
+   */
+  // console.log("filePathsMap: ", filePathsMap);
+  // console.log('code: ', code);
 
   return code;
 };     
@@ -352,15 +360,24 @@ const addApiToForm = (container, inputs, apiUrl) => {
 };
 
 // Route Handlers
-router.post('/parseFiles', function(req, res) {
+router.post('/parseFiles', async function(req, res) {
 
   try {
 
     let { files } = req.body;
-    console.log('files: ', files);
+    // console.log('files: ', files);
+
+    const entryFile = getEntryFile(files);
 
     Object.keys(files).forEach(file => {
       if(getFileExtension(file) === "js") {
+
+        // Check if entry file
+        if(file === entryFile) {
+          
+          // Add ViewerJS to entry file
+          files[file] = addViewer(files[file]);
+        }
 
         // Add path prop to the file's code.
         let fileUpdatedCode = insertFilePaths(file, files[file]);
@@ -369,6 +386,18 @@ router.post('/parseFiles', function(req, res) {
         files[file] = fileUpdatedCode;
       }
     });
+
+    const viewerFiles = await getViewerFiles(entryFile);
+
+    files = {
+      ...files,
+      ...viewerFiles
+    };
+
+     /**
+     * Testing Logs
+     */
+    // console.log('viewerFiles: ', viewerFiles);
 
     return res.json({ files });
 
