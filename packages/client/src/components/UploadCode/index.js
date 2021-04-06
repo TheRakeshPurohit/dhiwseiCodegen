@@ -1,142 +1,70 @@
 import React from 'react';
 import './UploadCode.css';
 import { PARSE_FILES } from '../../constants/apiConstants';
-// import { useSandpack } from '@codesandbox/sandpack-react';
-
-
-// const fs = new FS();
+import axios from 'axios';
 
 const UploadCode = (props) => {
 
-  // const { dispatch, listen } = useSandpack();
-
-  // Get dependencies out of package.json
-  const getDependencies = (file) => {
-
-    // parse json from file
-    const fileJSON = JSON.parse(file.value);
-    if(fileJSON && fileJSON.dependencies) {
-
-      // if json file has dependencies, update in state hook
-      props.setDependencies({...fileJSON.dependencies});
-    }
-
-    // console.log('json data: ', fileJSON);
-    // console.log('found package.json', file);
-  };
-
-  // Read data of uploded file 
-  // Return a resolved/rejected promise
-  const getFileData = file => {
-
-    // Must return a promise
+  const readJsonFile = (file) => {
+    console.log('calling readJSON');
     return new Promise((resolve, reject) => {
-      
+
+      console.log('inside promise');
       // File reader to read the contents of the file
       const reader = new FileReader();
-
-      // determine what happens on load
-      // TODO: need to get package.json, and determine dependencies
-
       reader.onload = e => {
-
-        // log file contents
-        // console.log('./' + file.webkitRelativePath.split('/').splice(1).join('/'), " => ", );
-
-        // if file is package.json, get all dependencies
-        if(file.webkitRelativePath.endsWith('package.json')) {
-          getDependencies({
-            key: '/' + file.webkitRelativePath.split('/').splice(1).join('/'),
-            value: e.target?.result
-          });
-        }
-
-        resolve({
-          key: '/' + file.webkitRelativePath.split('/').splice(1).join('/'),
-          value: e.target?.result
-        })
+        let packageJSON = JSON.parse(e.target.result);
+        if(packageJSON) {
+          console.log('got it: ', packageJSON);
+          resolve(packageJSON);
+        } else{
+          console.log('cannot parse files');
+          reject(false);
+        } 
       }
-
       // reject on error
       reader.onerror = e => {
+        console.log('reader error', e);
         reject(e)
       }
-
-      // Reader config stuff
-      // normal readAsText
-      // images readAsDataUrl
-      if (file.type == "image/png") {
-        reader.readAsDataURL(file)
-      } else {
-        reader.readAsText(file)
-      }
-    })
-  }
+      reader.readAsText(file);
+    });
+  };
 
   const onChange = (e) => {
     const files = [...e.target.files];
+    let packageJSON;
+    const formData = new FormData();
 
-    const dataPromises = [], remaining = [];
-    files.map(file => {
-
-      // get data and push to dataPromises if valid
-      if (["text/javascript", "text/css", "image/svg+xml", "text/x-scss", "image/png"].includes(file.type)) {
-        dataPromises.push(getFileData(file));
-      } else if (file.webkitRelativePath.endsWith('.jsx')) {
-        dataPromises.push(getFileData(file));
-      } else if (file.webkitRelativePath.endsWith('.less')) {
-        dataPromises.push(getFileData(file));
-      } else if (file.webkitRelativePath.endsWith('package.json')) {
-        dataPromises.push(getFileData(file));
-      } else {
-
-        // if no match push to remaining
-        remaining.push(file.webkitRelativePath.split('.').pop());
+    files.forEach(async (file, index) => {
+      formData.append(`file${index}`, file);
+      if(file.webkitRelativePath.endsWith('package.json')) {
+        packageJSON = await readJsonFile(file);
       }
-
-      // log png files, Why?
-      if (file.webkitRelativePath.endsWith('.png')) {
-        console.log(file);
-      }
-      
     });
 
-    // log the remaning files
-    console.log('remaining => ', [...new Set(remaining)]);
-    
-    // wait to resolve all promises
-    // then receive the data array
-    Promise.all(dataPromises).then(data => {
-      const filesObj = {};
-
-      // convert the data array in files object format
-      data.map(d => {
-        filesObj[d.key] = d.value;
-      })
-
-      // set files in state hook
-      props?.setEntry('/src/index.js');
-
-      // Call API to parse files
-      window.fetch(PARSE_FILES, {
-        method: 'POST',
+    /**
+     * Reader Error needs to be fixed
+     * see the logs on console
+     */
+    // if(packageJSON && packageJSON.scripts && packageJSON.scripts.build) {
+    if(true) {
+      // make axios request;
+      axios.post(PARSE_FILES, formData, {
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ files: filesObj })
-      })
-      .then(async res => {
-        const data = await res.json();
-        if (res.ok) {
-          return data;
-        } else {
-          return Promise.reject(data)
+          'Content-Type': 'multipart/form-data'
         }
       })
-      .then(data => props.setFiles(data?.files))
-      .catch(err => console.log('err: ', err));
-    
-    })
+      .then(function (response) {
+        console.log("uploadFilesResponse: ", response);
+      })
+      .catch(function (error) {
+        console.error(error);
+      });
+    }
+    else {
+      console.error("Build not found in package.json", packageJSON);
+    }
   }
 
   return (
