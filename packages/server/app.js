@@ -7,6 +7,7 @@ const cors = require('cors');
 
 const indexRouter = require('./routes/index');
 let astRouter = require('./routes/astParser');
+const uploadFilesRouter = require('./routes/uploadFiles');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(cors());
 
 app.use('/', indexRouter);
 app.use('/astParser', astRouter);
+app.use('/uploadFiles', uploadFilesRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

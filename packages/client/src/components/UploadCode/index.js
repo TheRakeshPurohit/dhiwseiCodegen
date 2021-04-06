@@ -55,6 +55,12 @@ const UploadCode = (props) => {
           'Content-Type': 'multipart/form-data'
         }
       })
+      .then(res => {
+        if(res.data) {
+          return res.data;
+        }
+        else throw Error({ msg: "no data", res });
+      })
       .then(function (response) {
         console.log("uploadFilesResponse: ", response);
       })
