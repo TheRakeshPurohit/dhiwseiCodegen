@@ -21,6 +21,7 @@ let filePathsMap = {};
 /**
  * parse file and add component path
  * as prop to Userdefined components.
+ * UPDATE: insert `dhiwiseParentPath` to define parent container
  */
 const insertFilePaths = (filePath, fileCode) => {
   
@@ -84,6 +85,11 @@ const insertFilePaths = (filePath, fileCode) => {
     JSXOpeningElement(path) {
       
       const { node } = path;
+      
+      /**
+       * Check if User Defined component
+       * and insert `dhiwiseFilePath` prop
+       */
       if(
         node.name &&
         t.isJSXIdentifier(node.name) &&
@@ -100,6 +106,28 @@ const insertFilePaths = (filePath, fileCode) => {
 
         // insert prop to attributes array
         node.attributes.push(dhiwisePathAttrAst);
+      }
+
+      /**
+       * Insert `dhiwiseParentPath` prop to all 
+       * components of current file to 
+       * value of path of current file
+       */
+      if(
+        node.name &&
+        t.isJSXIdentifier(node.name) &&
+        node.name.name 
+      ) {
+
+        // create ast attribute
+        let dhiwiseParentPathAttrAst = t.jsxAttribute(
+          t.jsxIdentifier('dhiwiseParentPath'), 
+          t.stringLiteral(filePath)
+        );
+
+        // insert prop to attributes array
+        node.attributes.push(dhiwiseParentPathAttrAst);
+
       }
 
     }
@@ -409,6 +437,7 @@ router.post('/parseFiles', async function(req, res) {
 router.post('/addApiToForm', (req, res) => {
 
   let { container, inputs, apiUrl } = req.body;
+  console.log("container, inputs, apiUrl => ",container, inputs, apiUrl)
   if(!container || !inputs || !apiUrl) {
     res.statusCode = 400;
     res.json({ msg: 'Missing Fields' })

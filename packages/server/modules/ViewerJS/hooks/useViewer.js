@@ -30,7 +30,7 @@ export function useViewer() {
       // console.log("current hover component: ", this);
 
       // logging component fiber data
-      // console.log("element fiber data: ", domHelper.FindReact(this));
+      console.log("element fiber data: ", domHelper.FindReact(this));
     }
     e.stopPropagation();
   }
@@ -72,24 +72,27 @@ export function useViewer() {
            * TODO - Need to figure out logic
            * to find actual component defined in code.
            */
-          inputFibers.push({
-            name: fiber.type && fiber.type.name ? fiber.type.name : "NotFound",
-            src:
-              fiber.memoizedProps && fiber.memoizedProps.dhiwiseFilePath
-                ? fiber.memoizedProps.dhiwiseFilePath
-                : null,
-            fiber
-          });
-
+          console.log("from clickhandler: ", input, fiber);
+          let inputData = domHelper.getCodedComponent(fiber);
+          if (inputData) {
+            console.log("inputData: ", inputData);
+            inputFibers.push({ ...inputData });
+          }
           // inputFibers.push(fiber);
         }
       });
+
+      /**
+       * Find container
+       */
+      const container = inputFibers.find((fiber) => fiber.container !== "");
 
       // Update hook data
       setData({
         ...data,
         showSidebar: true,
-        inputFibers: [...inputFibers]
+        inputFibers: [...inputFibers],
+        container: container.container ? container.container : null
       });
 
       /**

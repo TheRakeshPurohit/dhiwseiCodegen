@@ -9,6 +9,9 @@ const layout = {
   wrapperCol: { span: 16 }
 };
 
+const FORMAPI = "http://localhost:5000/astParser/addApiToForm";
+
+
 const Viewer = () => {
   const [viewerData, setViewerData] = useViewer();
 
@@ -18,11 +21,62 @@ const Viewer = () => {
     }
   }, [viewerData]);
 
+  function validateData(data) {
+    if (!data.container || data.container === "") {
+      return false;
+    }
+
+    if (
+      !data.inputs ||
+      !Array.isArray(data.inputs) ||
+      data.inputs.length === 0
+    ) {
+      return false;
+    }
+
+    if (!data.apiUrl || !data.apiUrl === "") {
+      return false;
+    }
+
+    return true;
+  }
+
+
+
   const handleOk = () => {
-    setViewerData({
-      ...viewerData,
-      showSidebar: false
-    });
+    if (validateData(viewerData)) {
+      let postData = {
+        container: {
+          name: "RegisterForm",
+          src: viewerData.container
+        },
+        inputs: viewerData.inputs.map((input) => ({
+          name: input,
+          src: null
+        })),
+        apiUrl: viewerData.apiUrl
+      };
+      console.log("postData: ", postData);
+
+      window
+        .fetch(FORMAPI, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(postData)
+        })
+        .then(async (res) => await res.json())
+        .then((data) => console.log("data: ", data))
+        .catch((err) => console.error(err));
+
+      setViewerData({
+        ...viewerData,
+        showSidebar: false
+      });
+    } else {
+      console.log("invalid data");
+    }
   };
 
   const handleCancel = () => {
@@ -33,6 +87,10 @@ const Viewer = () => {
   };
 
   function handleChange(value) {
+    setViewerData({
+      ...viewerData,
+      inputs: [value]
+    });
     console.log(`selected ${value}`);
   }
 
@@ -46,7 +104,14 @@ const Viewer = () => {
       >
         <Form {...layout} name="basic" initialValues={{ remember: true }}>
           <Form.Item label="API URL" name="api_url">
-            <Input />
+            <Input 
+              onChange={(e) =>
+                setViewerData({
+                  ...viewerData,
+                  apiUrl: e.target.value
+                })
+              }
+            />
           </Form.Item>
           <Form.Item label="Inputs">
             <Select style={{ width: 120 }} onChange={handleChange}>

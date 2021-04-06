@@ -31,11 +31,6 @@ const FindReact = (dom, traverseUp = 0) => {
   return compFiber;
 };
 
-// Return current document
-function GetCurrentDocument() {
-  return window.document;
-}
-
 // Get all elements within the given element
 function GetAllElements(element) {
   var elements = [];
@@ -74,4 +69,89 @@ function GetAllInputTags(rootId) {
   return inputTags;
 }
 
-export { GetCurrentDocument, GetAllElements, GetAllInputTags, FindReact };
+
+// Return current document
+function GetCurrentDocument() {
+  return window.document;
+}
+
+function getMemoizedInputTagProps(fiber) {
+  if (fiber) {
+    // UserDefined component check
+    if (
+      fiber.memoizedProps &&
+      fiber.memoizedProps.dhiwiseParentPath &&
+      fiber.memoizedProps.dhiwiseParentPath !== "" &&
+      fiber.memoizedProps.dhiwiseComponentName &&
+      fiber.memoizedProps.dhiwiseComponentName !== ""
+    ) {
+      return {
+        name: fiber.memoizedProps.dhiwiseComponentName
+          ? fiber.memoizedProps.dhiwiseComponentName
+          : "NotFound",
+        src:
+          fiber.memoizedProps && fiber.memoizedProps.dhiwiseFilePath
+            ? fiber.memoizedProps.dhiwiseFilePath
+            : null,
+        container: fiber.memoizedProps.dhiwiseParentPath
+          ? fiber.memoizedProps.dhiwiseParentPath
+          : null,
+        fiber
+      };
+    } else if (
+      /**
+       * for core components
+       */
+      fiber.memoizedProps &&
+      fiber.memoizedProps.value &&
+      fiber.memoizedProps.children &&
+      Array.isArray(fiber.memoizedProps.children) &&
+      fiber.memoizedProps.children.length > 0
+    ) {
+      /**
+       * find the input tag children
+       */
+      let inputProps = fiber.memoizedProps.children.find(
+        (input) => input.type === "input"
+      );
+      if (inputProps && inputProps.props) {
+        console.log("inputProps: ", inputProps.props);
+        return {
+          name: inputProps.props.dhiwiseComponentName
+            ? inputProps.props.dhiwiseComponentName
+            : "NotFound",
+          src: null,
+          container: inputProps.props.dhiwiseParentPath
+            ? inputProps.props.dhiwiseParentPath
+            : null,
+          fiber
+        };
+      } else return false;
+    }
+  } else {
+    return false;
+  }
+}
+
+function getCodedComponent(fiber) {
+  if (fiber) {
+    /**
+     * find `Name` and `Src` of input tag
+     * No src incase of external module.
+     * TODO - Need to figure out logic
+     * to find actual component defined in code.
+     */
+
+    console.log("getCodedComponent fiber: ", fiber);
+    let inputProps = getMemoizedInputTagProps(fiber);
+    if (inputProps) {
+      return inputProps;
+    } else if (fiber.child) {
+      return getCodedComponent(fiber.child);
+    } else {
+      return false;
+    }
+  }
+}
+
+export { getCodedComponent, GetCurrentDocument, GetAllElements, GetAllInputTags, FindReact };
