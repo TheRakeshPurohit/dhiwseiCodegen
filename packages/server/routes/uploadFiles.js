@@ -50,7 +50,7 @@ router.post('/', function(req, res) {
 
     if(packageJSON && packageJSON.scripts && packageJSON.scripts.build) {
       console.log('run script: ', packageJSON.scripts.build);
-     //  buildProject(projectFolderName);
+      buildProject(projectFolderName);
       let filePath = path.join(process.cwd(), 'public', 'project', projectFolderName,'build','index.html');
       res.json({ fields, files,filePath });
     }

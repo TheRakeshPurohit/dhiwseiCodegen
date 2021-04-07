@@ -5,8 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "concurrently -k yarn:start-client-dev yarn:start-server-dev",
+    "postinstall": "concurrently -k yarn:install-client-dev yarn:install-server-dev",
     "start-client-dev": "lerna run start --scope=@dhiwise-codegen/client --stream",
+    "install-client-dev": "lerna run install --scope=@dhiwise-codegen/client --stream",
     "start-server-dev": "lerna run start --scope=@dhiwise-codegen/server --stream",
+    "install-server-dev": "lerna run install --scope=@dhiwise-codegen/server --stream",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
