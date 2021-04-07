@@ -46,12 +46,12 @@ router.post('/', function(req, res) {
       }
     }
 
-    injectViewerJs(projectFolderName, "src/index.js");
+    injectViewerJs(projectFolderName, "/src/index.js");
 
     if(packageJSON && packageJSON.scripts && packageJSON.scripts.build) {
       console.log('run script: ', packageJSON.scripts.build);
-      // buildProject(projectFolderName);
-      let filePath = path.join(process.cwd(), 'public', 'project', 'newProject','build','index.html');
+     //  buildProject(projectFolderName);
+      let filePath = path.join(process.cwd(), 'public', 'project', projectFolderName,'build','index.html');
       res.json({ fields, files,filePath });
     }
 

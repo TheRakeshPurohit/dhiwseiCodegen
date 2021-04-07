@@ -6,6 +6,8 @@ const { addViewer  } = require("../modules/parseFiles");
 
 function checkAndCreateFolder(filePath, type = 1) {
   let folderName = filePath;
+  let rootDir = process.cwd();
+
   if(type == 1) {
     // Remove filename for files
     console.log("found file");
@@ -14,10 +16,17 @@ function checkAndCreateFolder(filePath, type = 1) {
     folderName = folderName.join("/");
   }
   console.log('folderName: ', folderName);
-  if (!fs.existsSync(folderName)) {
-    console.log('creating folder: ', folderName);
-    fs.mkdirSync(folderName);
-  }
+  let folderNamePath = folderName.replace(rootDir, "");
+  let folderNames = folderNamePath.split('/');
+  let tempBuffer = [];
+  folderNames.forEach(folder => {
+    tempBuffer.push(folder);
+    let folderToBeCreated = path.join(rootDir, tempBuffer.join('/'));
+    if (!fs.existsSync(folderToBeCreated)) {
+      console.log('creating folder: ', folderToBeCreated);
+      fs.mkdirSync(folderToBeCreated);
+    } 
+  });
 }
 
 module.exports.saveFilesToStaticServer = (files, projectFolderName) => {
@@ -103,15 +112,17 @@ module.exports.injectViewerJs = (projectFolder, mainFilePath) => {
 
   if(files.length > 0) {
     files.forEach(file => {
-
+        let rootFolderPath = mainFilePath.split("/");
+        rootFolderPath.pop();
+        rootFolderPath = rootFolderPath.join("/");
         // Create Viewjs folders in project loacation
-       checkAndCreateFolder(path.join(projectPath, file.path), file.type);  
+       checkAndCreateFolder(path.join(projectPath,rootFolderPath, file.path), file.type);  
         // Copy files to project location
        if(file.type === 1) {
         try {
            console.log("rawDataPath: ", path.join(viewerJSPath, file.path));
            let rawData = fs.readFileSync(path.join(viewerJSPath, file.path));
-           fs.writeFileSync(path.join(projectPath, file.path), rawData);
+           fs.writeFileSync(path.join(projectPath,rootFolderPath, file.path), rawData);
            console.log('file written successfully!');
         } catch (error) {
            console.log("File write error: ", error);
@@ -121,6 +132,7 @@ module.exports.injectViewerJs = (projectFolder, mainFilePath) => {
   }
   
   // Read main file and import viewjs
+  console.log("mainFile: ", mainFile);
   let mainFileCode = fs.readFileSync(mainFile).toString();
   console.log("mainFile: ", mainFileCode);
   const updatedCode = addViewer(mainFileCode);  
