@@ -141,6 +141,8 @@ module.exports.injectViewerJs = (projectFolder, mainFilePath) => {
   // Update code in mainFile
   fs.writeFileSync(mainFile, updatedCode);
 
+
+
 };
 
 module.exports.buildProject = (projectFolderName) => {

@@ -3,6 +3,7 @@ let router = express.Router();
 const formidable = require('formidable');
 const path = require('path')
 const { saveFilesToStaticServer, buildProject, injectViewerJs } = require("../modules/uploadFiles");
+const fs = require("fs");
 
 function makeid(length) {
     var result           = [];
@@ -49,6 +50,14 @@ router.post('/', function(req, res) {
     injectViewerJs(projectFolderName, "/src/index.js");
 
     if(packageJSON && packageJSON.scripts && packageJSON.scripts.build) {
+      let rootDir = process.cwd();
+      if(!packageJSON.dependencies.antd) {
+         packageJSON.dependencies = {
+          ...packageJSON.dependencies,
+          "antd": "latest"
+        };
+      }
+      fs.writeFileSync(path.join(rootDir, "public", "project", projectFolderName, "package.json"), JSON.stringify(packageJSON));
       console.log('run script: ', packageJSON.scripts.build);
       buildProject(projectFolderName);
       let filePath = path.join(process.cwd(), 'public', 'project', projectFolderName,'build','index.html');
