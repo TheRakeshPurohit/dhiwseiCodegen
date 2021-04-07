@@ -1,0 +1,2 @@
+.App{display:flex;padding:0 15px;margin:0;position:relative}.react-router-tabs{margin-bottom:20px}.App a{list-style:none;padding:15px 8px;position:relative;text-transform:uppercase;font-size:12px;letter-spacing:1.5px;cursor:pointer;color:#b8bbc8;white-space:nowrap;text-decoration:none}.App a.active:after{content:"";width:40%;height:5px;background:#c09e7c;position:absolute;bottom:0;border-radius:10px 10px 0 0;margin:auto;left:0;right:0}.App a.active{color:#c09e7c;font-weight:600}.App a.active a{color:#c09e7c}
+/*# sourceMappingURL=main.59bcff7c.chunk.css.map */

@@ -4,7 +4,7 @@ import { PARSE_FILES } from '../../constants/apiConstants';
 import axios from 'axios';
 
 const UploadCode = (props) => {
-
+  const [iframePath,setIframePath] = React.useState('')
   const readJsonFile = (file) => {
     console.log('calling readJSON');
     return new Promise((resolve, reject) => {
@@ -56,13 +56,8 @@ const UploadCode = (props) => {
         }
       })
       .then(res => {
-        if(res.data) {
-          return res.data;
-        }
-        else throw Error({ msg: "no data", res });
-      })
-      .then(function (response) {
-        console.log("uploadFilesResponse: ", response);
+        console.log('res => ',res)
+        setIframePath(res.data.filePath)
       })
       .catch(function (error) {
         console.error(error);
@@ -72,10 +67,11 @@ const UploadCode = (props) => {
       console.error("Build not found in package.json", packageJSON);
     }
   }
-
+  console.log('iframePath => ',iframePath)
   return (
-    <div className="upload-code-container">
+    <div className="upload-code-container" style={{display:'flex',flexDirection:'column'}}>
       <input name='files[]' type='file' onChange={onChange} directory='' webkitdirectory='' />
+      {iframePath && <iframe src={iframePath} style={{width:'100%',height:'100vh'}}/>}
     </div>
   )
 }
