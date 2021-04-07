@@ -26,6 +26,10 @@ module.exports.getEntryFile = (files) => {
 };
 
 
+/**
+ * Imports ViewerJs files to main file
+ * and also wraps main component with viewerjs code.
+ */
 module.exports.addViewer = (fileCode) => {
 
   let ast = babelParser.parse(fileCode, {
